@@ -4,10 +4,22 @@ using System.Collections.Generic;
 using System.Linq;
 
 [ExecuteInEditMode]
+[SelectionBase]
 public class MarchingCubeRenderer : MonoBehaviour
 {
     [SerializeField]
     public VoxelData voxel = new VoxelData();
+
+    public int renderResolution;
+
+    public int width
+    {
+        get { return renderResolution; }
+    }
+
+    public int height { get { return renderResolution; } }
+
+    public int depth { get { return renderResolution; } }
 
     public Material material;
 
@@ -45,9 +57,9 @@ public class MarchingCubeRenderer : MonoBehaviour
 
     public void GenerateMesh()
     {
-        int w = voxel.data.GetLength(0);
-        int h = voxel.data.GetLength(1);
-        int d = voxel.data.GetLength(2);
+        int w = width;
+        int h = height;
+        int d = depth;
 
         vertices.Clear();
         for (int x = -1; x < w; x++)
@@ -98,7 +110,10 @@ public class MarchingCubeRenderer : MonoBehaviour
 
     byte Lookup(int x, int y, int z)
     {
-        return voxel[x, y, z];
+        float nx = (float)x / renderResolution;
+        float ny = (float)y / renderResolution;
+        float nz = (float)z / renderResolution;
+        return voxel.LinearSample(nx, ny, nz);
     }
 
     void DrawVertex(int x, int y, int z)

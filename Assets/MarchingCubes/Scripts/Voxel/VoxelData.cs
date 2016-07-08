@@ -111,5 +111,36 @@ public class VoxelData
         float result = (xySample + xzSample + yzSample) / 3 * 256;
         return (byte)result;
     }
+
+
+    public byte LinearSample(float x, float y, float z)
+    {
+        float coordX = x * _resolution;
+        float coordY = y * _resolution;
+        float coordZ = z * _resolution;
+        
+        int xx = (int)coordX;
+        int yy = (int)coordY;
+        int zz = (int)coordZ;
+
+        float tx = coordX - xx;
+        float ty = coordY - yy;
+        float tz = coordZ - zz;
+
+        float p0 = this[xx, yy, zz];
+        float p1 = this[xx, yy, zz + 1];
+        float p2 = this[xx, yy + 1, zz];
+        float p3 = this[xx, yy + 1, zz + 1];
+        float p4 = this[xx + 1, yy, zz];
+        float p5 = this[xx + 1, yy, zz + 1];
+        float p6 = this[xx + 1, yy + 1, zz];
+        float p7 = this[xx + 1, yy + 1, zz + 1];
+
+        float np = Mathf.Lerp(Mathf.Lerp(p0, p2, ty), Mathf.Lerp(p4, p6, ty), tx);
+        float fp = Mathf.Lerp(Mathf.Lerp(p1, p3, ty), Mathf.Lerp(p5, p7, ty), tx);
+
+        return (byte)Mathf.Lerp(np, fp, tz);
+    }
+
     public event System.Action dataChanged;
 }
