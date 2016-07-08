@@ -11,6 +11,26 @@ public class MarchingCubeRenderer : MonoBehaviour
     [SerializeField]
     public VoxelData voxel = new VoxelData();
 
+    [SerializeField]
+    byte _isoValue = 100;
+
+    public int isoValue
+    {
+        get
+        {
+            return _isoValue;
+        }
+
+        set
+        {
+            if (_isoValue != value)
+            {
+                _isoValue = (byte)value;
+                GenerateMesh();
+            }
+        }
+    }
+
     Mesh mesh;
 
     List<Vector3> vertices = new List<Vector3>();
@@ -18,9 +38,10 @@ public class MarchingCubeRenderer : MonoBehaviour
     void Awake()
     {
         mesh = new Mesh();
+        mesh.name = "Marching";
         mesh.MarkDynamic();
         mesh.Clear();
-
+        
         GetComponent<MeshFilter>().sharedMesh = mesh;
     }
 
@@ -28,6 +49,7 @@ public class MarchingCubeRenderer : MonoBehaviour
     {
         GenerateMesh();
     }
+
     public void GenerateMesh()
     {
         int w = voxel.data.GetLength(0);
@@ -47,31 +69,28 @@ public class MarchingCubeRenderer : MonoBehaviour
         }
 
         mesh.Clear();
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = vertices.Select((x, i) => i).ToArray();
+        if (vertices.Count > 65000)
+        {
+            mesh.subMeshCount = vertices.Count / 65000;
+            mesh.SetVertices(vertices);
+        }
+        else
+        {
+            mesh.SetVertices(vertices);
+            mesh.triangles = vertices.Select((x, i) => i).ToArray();
+        }
         mesh.RecalculateNormals();
+        GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 
     void Marching(int x, int y, int z)
     {
-        int cubeIndex = 0;
-        for (int i = 0; i < 2; i++)
-        {
-            for (int j = 0; j < 2; j++)
-            {
-                for (int k = 0; k < 2; k++)
-                {
-                    int vertex = i * 4 + j * 2 + k;
-                    vertex = MarchingCubeLookupTable.vertexMapping[vertex];
-                    if (voxel[x + i, y + j, z + k] > 0)
-                    {
-                        cubeIndex |= 1 << vertex;
-                    }
-                }
-            }
-        }
+        MarchingCube.Polygonise(x, y, z, Lookup, vertices, new Vector3(x, y, z), _isoValue);
+    }
 
-        MarchingCube.Polygonise((byte)cubeIndex, vertices, new Vector3(x, y, z));
+    byte Lookup(int x, int y, int z)
+    {
+        return voxel[x, y, z];
     }
 
     void DrawVertex(int x, int y, int z)

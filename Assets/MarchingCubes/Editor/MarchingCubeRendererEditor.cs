@@ -17,8 +17,11 @@ public class MarchingCubeRendererEditor : Editor
     int height;
     int depth;
 
+    bool editMode = false;
+
     void OnEnable()
     {
+        editMode = false;
         edgeStyle.normal.textColor = Color.green;
         vertexStyle.normal.textColor = Color.red;
 
@@ -30,16 +33,24 @@ public class MarchingCubeRendererEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        int newValue = EditorGUILayout.IntSlider("Resolution:", voxelRenderer.voxel.resolution, 1, 15);
+        int newValue = EditorGUILayout.IntSlider("Resolution:", voxelRenderer.voxel.resolution, 1, 64);
         if (newValue != voxelRenderer.voxel.resolution)
         {
             voxelRenderer.voxel.resolution = newValue;
             voxelRenderer.GenerateMesh();
         }
+
+        voxelRenderer.isoValue = EditorGUILayout.IntSlider("IsoValue:", voxelRenderer.isoValue, 0, 255);
+         
+        editMode = EditorGUILayout.Toggle("Edit", editMode);
     }
 
     void OnSceneGUI()
     {
+        if (editMode == false)
+        {
+            return;
+        }
         voxelRenderer = target as MarchingCubeRenderer;
         voxelRenderer = target as MarchingCubeRenderer;
         width = voxelRenderer.voxel.width;

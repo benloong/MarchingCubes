@@ -308,34 +308,125 @@ public static class MarchingCubeLookupTable
         6,
         5
     };
-
-    static MarchingCubeLookupTable()
-    {
-        int w = triTable.GetLength(0);
-        int h = triTable.GetLength(1);
-
-        for (int i = 0; i < w; i++)
-        {
-            for (int j = 0; j < h - 1; j += 3)
-            {
-                int t = triTable[i, j];
-                triTable[i, j] = triTable[i, j + 1];
-                triTable[i, j + 1] = t;
-            }
-        }
-    }
 }
 
 public class MarchingCube
 {
+    public delegate byte LookupFunc(int x, int y, int z);
+
+    public static int Polygonise(int x, int y, int z, LookupFunc lookupFunc, List<Vector3> vertices, Vector3 offset, byte isoVal)
+    {
+        return _Polygonise(x, y, z, lookupFunc, vertices, offset, isoVal);
+    }
+
     public static int Polygonise(byte cubeIndex, List<Vector3> vertices, Vector3 offset)
     {
         return _Polygonise(cubeIndex, vertices, offset);
     }
-
-    public static int Polygonise(byte cubeIndex, List<Vector3> vertices)
+    private static int _Polygonise(int x, int y, int z, LookupFunc lookupFunc, List<Vector3> vertices, Vector3 offset, byte isoVal = 0)
     {
-        return _Polygonise(cubeIndex, vertices, Vector3.zero);
+        var triTable = MarchingCubeLookupTable.triTable;
+        var vertTable = MarchingCubeLookupTable.edgeTable;
+        var pointTable = MarchingCubeLookupTable.pointTable;
+
+        Vector3[] interpVertices = new Vector3[12];
+
+        byte[] values = new byte[8];
+
+        int cubeIndex = 0;
+
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    int vertex = i * 4 + j * 2 + k;
+
+                    vertex = MarchingCubeLookupTable.vertexMapping[vertex];
+                    byte val = lookupFunc(x + i, y + j, z + k);
+                    values[vertex] = val;
+
+                    if (val <= isoVal)
+                    {
+                        cubeIndex |= 1 << vertex;
+                    }
+                }
+            }
+        }
+
+        /* Find the vertices where the surface intersects the cube */
+
+        interpVertices[0] =
+           VertexInterp(pointTable[0], pointTable[1], values[0], values[1], isoVal);
+
+        interpVertices[1] =
+           VertexInterp(pointTable[1], pointTable[2], values[1], values[2], isoVal);
+
+        interpVertices[2] =
+           VertexInterp(pointTable[2], pointTable[3], values[2], values[3], isoVal);
+
+        interpVertices[3] =
+           VertexInterp(pointTable[3], pointTable[0], values[3], values[0], isoVal);
+
+        interpVertices[4] =
+           VertexInterp(pointTable[4], pointTable[5], values[4], values[5], isoVal);
+
+        interpVertices[5] =
+           VertexInterp(pointTable[5], pointTable[6], values[5], values[6], isoVal);
+
+        interpVertices[6] =
+           VertexInterp(pointTable[6], pointTable[7], values[6], values[7], isoVal);
+
+        interpVertices[7] =
+           VertexInterp(pointTable[7], pointTable[4], values[7], values[4], isoVal);
+
+        interpVertices[8] =
+           VertexInterp(pointTable[0], pointTable[4], values[0], values[4], isoVal);
+
+        interpVertices[9] =
+           VertexInterp(pointTable[1], pointTable[5], values[1], values[5], isoVal);
+
+        interpVertices[10] =
+           VertexInterp(pointTable[2], pointTable[6], values[2], values[6], isoVal);
+
+        interpVertices[11] =
+           VertexInterp(pointTable[3], pointTable[7], values[3], values[7], isoVal);
+
+        for (int i = 0; i < 16; i++)
+        {
+            var v = triTable[cubeIndex, i];
+            if (v == -1)
+            {
+                break;
+            }
+
+            var lerp = pointTable[vertTable[v, 0]] + pointTable[vertTable[v, 1]];
+            //vertices.Add(lerp * 0.5f + offset);
+            vertices.Add(interpVertices[v] + offset);
+        }
+
+        return 0;
+    }
+
+    static Vector3 VertexInterp(Vector3 p1, Vector3 p2, byte v1, byte v2, byte isoVal)
+    {
+        if (isoVal == v1)
+        {
+            return p1;
+        }
+        if (isoVal == v2)
+        {
+            return p2;
+        }
+
+        if (v1 == v2)
+        {
+            return p2;
+        }
+
+        float t = (float)(isoVal - v1) / (v2 - v1);
+        return Vector3.Lerp(p1, p2, t);
     }
 
     private static int _Polygonise(byte cubeIndex, List<Vector3> vertices,Vector3 offset)

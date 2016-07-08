@@ -7,6 +7,12 @@ public class VoxelData
     [Range(1, 16), SerializeField]
     int _resolution;
 
+    float xOrigin;
+    float yOrigin;
+    float zOrigin;
+
+    public float scale = 3f;
+
     public int resolution
     {
         get
@@ -20,7 +26,7 @@ public class VoxelData
                 _data = null;
             }
 
-            value = Mathf.Clamp(value, 1, 16);
+            value = Mathf.Clamp(value, 1, 64);
             _resolution = value;
         }
     }
@@ -32,6 +38,9 @@ public class VoxelData
         {
             if (_data == null)
             {
+                xOrigin = Random.value;
+                yOrigin = Random.value;
+                zOrigin = Random.value;
                 _data = new byte[resolution, resolution, resolution];
                 for (int x = 0; x < resolution; x++)
                 {
@@ -39,7 +48,7 @@ public class VoxelData
                     {
                         for (int z = 0; z < resolution; z++)
                         {
-                            _data[x, y, z] = 1;
+                            _data[x, y, z] = PerlinNoise(x, y, z);
                         }
                     }
                 }
@@ -89,5 +98,18 @@ public class VoxelData
         }
     }
 
+    public byte PerlinNoise(int x, int y, int z)
+    {
+        float xCoord = xOrigin + (float)x / width * scale;
+        float yCoord = yOrigin + (float)y / height * scale;
+        float zCoord = zOrigin + (float)z / depth * scale;
+
+        float xySample = Mathf.PerlinNoise(xCoord, yCoord);
+        float xzSample= Mathf.PerlinNoise(xCoord, zCoord);
+        float yzSample = Mathf.PerlinNoise(yCoord, zCoord);
+
+        float result = (xySample + xzSample + yzSample) / 3 * 128;
+        return (byte)result;
+    }
     public event System.Action dataChanged;
 }
