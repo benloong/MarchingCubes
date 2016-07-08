@@ -3,13 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-[RequireComponent(typeof(MeshRenderer))]
-[RequireComponent(typeof(MeshFilter))]
 [ExecuteInEditMode]
 public class MarchingCubeRenderer : MonoBehaviour
 {
     [SerializeField]
     public VoxelData voxel = new VoxelData();
+
+    public Material material;
 
     [SerializeField]
     byte _isoValue = 100;
@@ -30,19 +30,12 @@ public class MarchingCubeRenderer : MonoBehaviour
             }
         }
     }
-
-    Mesh mesh;
+     
 
     List<Vector3> vertices = new List<Vector3>();
 
     void Awake()
-    {
-        mesh = new Mesh();
-        mesh.name = "Marching";
-        mesh.MarkDynamic();
-        mesh.Clear();
-        
-        GetComponent<MeshFilter>().sharedMesh = mesh;
+    { 
     }
 
     void Start()
@@ -68,19 +61,34 @@ public class MarchingCubeRenderer : MonoBehaviour
             }
         }
 
-        mesh.Clear();
-        if (vertices.Count > 65000)
+        const int maxVertexCount = 63000;
+        int meshCount = vertices.Count / maxVertexCount + 1;
+        for (int i = 0; i < meshCount; i++)
         {
-            mesh.subMeshCount = vertices.Count / 65000;
-            mesh.SetVertices(vertices);
+            var meshFilter = GetMeshFilter(i);
+            meshFilter.gameObject.SetActive(true);
+            meshFilter.sharedMesh.Clear();
+            meshFilter.sharedMesh.vertices = vertices.Skip(maxVertexCount * i).Take(maxVertexCount).ToArray();
+            meshFilter.sharedMesh.triangles = vertices.Skip(maxVertexCount * i).Take(maxVertexCount).Select((v, index) => index).ToArray();
+            meshFilter.sharedMesh.RecalculateNormals();
         }
-        else
+
+        int childCount = transform.childCount;
+
+        
+        for (int i = childCount; i > meshCount; i--)
         {
-            mesh.SetVertices(vertices);
-            mesh.triangles = vertices.Select((x, i) => i).ToArray();
+            var child = transform.GetChild(i - 1);
+            child.SetParent(null, false);
+            if (Application.isPlaying)
+            {
+                Destroy(child.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(child.gameObject);
+            }
         }
-        mesh.RecalculateNormals();
-        GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 
     void Marching(int x, int y, int z)
@@ -114,6 +122,28 @@ public class MarchingCubeRenderer : MonoBehaviour
     public void OnDrawGizmos()
     {
         //DrawAllVertex();
+    }
+
+    MeshFilter GetMeshFilter(int index)
+    {
+        if (index >= transform.childCount)
+        {
+            var child = new GameObject(index.ToString());
+            var rend = child.AddComponent<MeshRenderer>();
+            rend.sharedMaterial = material;
+
+            var filter = child.AddComponent<MeshFilter>();
+            Mesh mesh = new Mesh();
+            mesh.MarkDynamic();
+            mesh.name = index.ToString();
+            mesh.Clear();
+            filter.sharedMesh = mesh;
+
+            child.hideFlags = HideFlags.HideInHierarchy;
+            child.transform.SetParent(transform, false);
+        }
+
+        return transform.GetChild(index).GetComponent<MeshFilter>();
     }
 
     void DrawAllVertex()

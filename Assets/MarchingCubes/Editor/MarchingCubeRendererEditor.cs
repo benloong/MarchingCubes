@@ -41,7 +41,8 @@ public class MarchingCubeRendererEditor : Editor
         }
 
         voxelRenderer.isoValue = EditorGUILayout.IntSlider("IsoValue:", voxelRenderer.isoValue, 0, 255);
-         
+
+        voxelRenderer.material = (Material)EditorGUILayout.ObjectField("Material", voxelRenderer.material, typeof(Material), false);
         editMode = EditorGUILayout.Toggle("Edit", editMode);
     }
 

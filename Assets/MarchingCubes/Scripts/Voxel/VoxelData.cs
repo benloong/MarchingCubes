@@ -108,7 +108,7 @@ public class VoxelData
         float xzSample= Mathf.PerlinNoise(xCoord, zCoord);
         float yzSample = Mathf.PerlinNoise(yCoord, zCoord);
 
-        float result = (xySample + xzSample + yzSample) / 3 * 128;
+        float result = (xySample + xzSample + yzSample) / 3 * 256;
         return (byte)result;
     }
     public event System.Action dataChanged;
