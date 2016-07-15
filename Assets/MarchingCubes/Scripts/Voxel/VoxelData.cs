@@ -7,8 +7,11 @@ public class VoxelData
     [Range(1, 16), SerializeField]
     int _resolution;
 
+    [SerializeField]
     float xOrigin;
+    [SerializeField]
     float yOrigin;
+    [SerializeField]
     float zOrigin;
 
     public float scale = 3f;
@@ -38,9 +41,9 @@ public class VoxelData
         {
             if (_data == null)
             {
-                xOrigin = Random.value;
-                yOrigin = Random.value;
-                zOrigin = Random.value;
+                //xOrigin = Random.value;
+                //yOrigin = Random.value;
+                //zOrigin = Random.value;
                 _data = new byte[resolution, resolution, resolution];
                 for (int x = 0; x < resolution; x++)
                 {
@@ -119,9 +122,9 @@ public class VoxelData
         float coordY = y * _resolution;
         float coordZ = z * _resolution;
         
-        int xx = (int)coordX;
-        int yy = (int)coordY;
-        int zz = (int)coordZ;
+        int xx = Mathf.FloorToInt(coordX);
+        int yy = Mathf.FloorToInt(coordY);
+        int zz = Mathf.FloorToInt(coordZ);
 
         float tx = coordX - xx;
         float ty = coordY - yy;

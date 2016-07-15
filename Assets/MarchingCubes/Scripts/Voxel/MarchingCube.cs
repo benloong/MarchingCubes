@@ -263,6 +263,41 @@ public static class MarchingCubeLookupTable
 /*254*/{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 /*255*/{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
     };
+    public static int[] edgeMaskTable = new int[]
+    {
+        0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
+        0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
+        0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
+        0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
+        0x230, 0x339, 0x33 , 0x13a, 0x636, 0x73f, 0x435, 0x53c,
+        0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
+        0x3a0, 0x2a9, 0x1a3, 0xaa , 0x7a6, 0x6af, 0x5a5, 0x4ac,
+        0xbac, 0xaa5, 0x9af, 0x8a6, 0xfaa, 0xea3, 0xda9, 0xca0,
+        0x460, 0x569, 0x663, 0x76a, 0x66 , 0x16f, 0x265, 0x36c,
+        0xc6c, 0xd65, 0xe6f, 0xf66, 0x86a, 0x963, 0xa69, 0xb60,
+        0x5f0, 0x4f9, 0x7f3, 0x6fa, 0x1f6, 0xff , 0x3f5, 0x2fc,
+        0xdfc, 0xcf5, 0xfff, 0xef6, 0x9fa, 0x8f3, 0xbf9, 0xaf0,
+        0x650, 0x759, 0x453, 0x55a, 0x256, 0x35f, 0x55 , 0x15c,
+        0xe5c, 0xf55, 0xc5f, 0xd56, 0xa5a, 0xb53, 0x859, 0x950,
+        0x7c0, 0x6c9, 0x5c3, 0x4ca, 0x3c6, 0x2cf, 0x1c5, 0xcc ,
+        0xfcc, 0xec5, 0xdcf, 0xcc6, 0xbca, 0xac3, 0x9c9, 0x8c0,
+        0x8c0, 0x9c9, 0xac3, 0xbca, 0xcc6, 0xdcf, 0xec5, 0xfcc,
+        0xcc , 0x1c5, 0x2cf, 0x3c6, 0x4ca, 0x5c3, 0x6c9, 0x7c0,
+        0x950, 0x859, 0xb53, 0xa5a, 0xd56, 0xc5f, 0xf55, 0xe5c,
+        0x15c, 0x55 , 0x35f, 0x256, 0x55a, 0x453, 0x759, 0x650,
+        0xaf0, 0xbf9, 0x8f3, 0x9fa, 0xef6, 0xfff, 0xcf5, 0xdfc,
+        0x2fc, 0x3f5, 0xff , 0x1f6, 0x6fa, 0x7f3, 0x4f9, 0x5f0,
+        0xb60, 0xa69, 0x963, 0x86a, 0xf66, 0xe6f, 0xd65, 0xc6c,
+        0x36c, 0x265, 0x16f, 0x66 , 0x76a, 0x663, 0x569, 0x460,
+        0xca0, 0xda9, 0xea3, 0xfaa, 0x8a6, 0x9af, 0xaa5, 0xbac,
+        0x4ac, 0x5a5, 0x6af, 0x7a6, 0xaa , 0x1a3, 0x2a9, 0x3a0,
+        0xd30, 0xc39, 0xf33, 0xe3a, 0x936, 0x83f, 0xb35, 0xa3c,
+        0x53c, 0x435, 0x73f, 0x636, 0x13a, 0x33 , 0x339, 0x230,
+        0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c,
+        0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
+        0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
+        0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0
+    };
 
     public static int[,] edgeTable = new int[,]
     {
@@ -328,6 +363,7 @@ public class MarchingCube
         var triTable = MarchingCubeLookupTable.triTable;
         var vertTable = MarchingCubeLookupTable.edgeTable;
         var pointTable = MarchingCubeLookupTable.pointTable;
+        var edgeMaskTable = MarchingCubeLookupTable.edgeMaskTable;
 
         Vector3[] interpVertices = new Vector3[12];
 
@@ -355,43 +391,48 @@ public class MarchingCube
             }
         }
 
+        if (edgeMaskTable[cubeIndex] == 0)
+            return 0;
+
         /* Find the vertices where the surface intersects the cube */
+        if ((edgeMaskTable[cubeIndex] & 1) != 0)
+            interpVertices[0] = VertexInterp(pointTable[0], pointTable[1], values[0], values[1], isoVal);
 
-        interpVertices[0] =
-           VertexInterp(pointTable[0], pointTable[1], values[0], values[1], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 2) != 0)
+            interpVertices[1] = VertexInterp(pointTable[1], pointTable[2], values[1], values[2], isoVal);
 
-        interpVertices[1] =
-           VertexInterp(pointTable[1], pointTable[2], values[1], values[2], isoVal);
-
-        interpVertices[2] =
+        if ((edgeMaskTable[cubeIndex] & 4) != 0)
+            interpVertices[2] =
            VertexInterp(pointTable[2], pointTable[3], values[2], values[3], isoVal);
 
-        interpVertices[3] =
+        if ((edgeMaskTable[cubeIndex] & 8) != 0)
+            interpVertices[3] =
            VertexInterp(pointTable[3], pointTable[0], values[3], values[0], isoVal);
 
-        interpVertices[4] =
+        if ((edgeMaskTable[cubeIndex] & 16) != 0)
+            interpVertices[4] =
            VertexInterp(pointTable[4], pointTable[5], values[4], values[5], isoVal);
 
-        interpVertices[5] =
-           VertexInterp(pointTable[5], pointTable[6], values[5], values[6], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 32) != 0)
+            interpVertices[5] = VertexInterp(pointTable[5], pointTable[6], values[5], values[6], isoVal);
 
-        interpVertices[6] =
-           VertexInterp(pointTable[6], pointTable[7], values[6], values[7], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 64) != 0)
+            interpVertices[6] = VertexInterp(pointTable[6], pointTable[7], values[6], values[7], isoVal);
 
-        interpVertices[7] =
-           VertexInterp(pointTable[7], pointTable[4], values[7], values[4], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 128) != 0)
+            interpVertices[7] = VertexInterp(pointTable[7], pointTable[4], values[7], values[4], isoVal);
 
-        interpVertices[8] =
-           VertexInterp(pointTable[0], pointTable[4], values[0], values[4], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 256) != 0)
+            interpVertices[8] = VertexInterp(pointTable[0], pointTable[4], values[0], values[4], isoVal);
 
-        interpVertices[9] =
-           VertexInterp(pointTable[1], pointTable[5], values[1], values[5], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 512) != 0)
+            interpVertices[9] = VertexInterp(pointTable[1], pointTable[5], values[1], values[5], isoVal);
 
-        interpVertices[10] =
-           VertexInterp(pointTable[2], pointTable[6], values[2], values[6], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 1024) != 0)
+            interpVertices[10] = VertexInterp(pointTable[2], pointTable[6], values[2], values[6], isoVal);
 
-        interpVertices[11] =
-           VertexInterp(pointTable[3], pointTable[7], values[3], values[7], isoVal);
+        if ((edgeMaskTable[cubeIndex] & 2048) != 0)
+            interpVertices[11] = VertexInterp(pointTable[3], pointTable[7], values[3], values[7], isoVal);
 
         for (int i = 0; i < 16; i++)
         {
@@ -401,8 +442,6 @@ public class MarchingCube
                 break;
             }
 
-            var lerp = pointTable[vertTable[v, 0]] + pointTable[vertTable[v, 1]];
-            //vertices.Add(lerp * 0.5f + offset);
             vertices.Add(interpVertices[v] + offset);
         }
 
